@@ -31,7 +31,7 @@ type document
     define viewer as self or owner or viewer from parent
 ```
 
-3. Start the app
+4. Start the app
 ```console
 export FGA_STORE_ID=<storeID>
 export FGA_CLIENT_ID=<clientID>
