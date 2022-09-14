@@ -44,6 +44,11 @@ The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the
 ### Authentication
 Every endpoint is protected with bearer token based authentication. Use [jwt.io](https://jwt.io) to craft tokens with a `sub` claim. The token's secret should be `mysecret` for the auth middleware to verify it correctly.
 
+Include the `Authorization: Bearer <token>` header in each request. For example,
+```
+curl -X POST -H "Authorization: Bearer <token>" http:localhost:8080/folders -d '{"name":"folderX"}'
+```
+ 
 ### Folders
 ```
 POST http://localhost:8080/folders
