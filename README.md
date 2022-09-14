@@ -40,6 +40,9 @@ go run main.go
 ```
 The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the [Auth0 FGA Dashboard](https://dashboard.fga.dev) for your FGA account.
 
+## Postman Collection
+[Download](./postman_collection.json) the Postman collection for the sample API if you'd like.
+
 ## API Reference
 ### Authentication
 Every endpoint is protected with bearer token based authentication. Use [jwt.io](https://jwt.io) to craft tokens with a `sub` claim. The token's secret should be `mysecret` for the auth middleware to verify it correctly.
