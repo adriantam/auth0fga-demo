@@ -1,4 +1,4 @@
-# openfga-demo
+# auth0fga-demo
 This project demonstrates a sample Google Docs API with access control enforced via an integration with [Auth0 FGA](https://fga.dev).
 
 ## Running
