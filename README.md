@@ -20,3 +20,39 @@ export FGA_CLIENT_SECRET=<secret>
 go run main.go
 ```
 The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the [Auth0 FGA Dashboard](https://dashboard.fga.dev) for your FGA account.
+
+## API Reference
+### Authentication
+Every endpoint is protected with bearer token based authentication. Use [jwt.io](https://jwt.io) to craft tokens with a `sub` claim. The token's secret should be `mysecret` for the auth middleware to verify it correctly.
+
+### Folders
+```
+POST http://localhost:8080/folders
+{"name": "folderX"}
+```
+
+```
+GET http://localhost:8080/folders/:id
+```
+
+### Documents
+```
+POST http://localhost:8080/documents
+{"parent": "folder:folderX", "name": "mydoc"}
+```
+
+```
+GET http://localhost:8080/documents/:id
+```
+
+### Groups
+```
+POST http://localhost:8080/groups
+{"name": "engineering", "members": ["jill@auth0.com"]}
+```
+
+### Share Object
+```
+POST http://localhost:8080/share
+{"object": "folder:folderX", "relation": "viewer", "user": "group:engineering#member"}
+```
