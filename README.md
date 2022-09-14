@@ -13,6 +13,7 @@ PGPASSWORD=password psql -h localhost -p 5432 -U postgres -d postgres -f schema.
 ```
 
 3. Define the Authorization Model in Auth0 FGA
+
 Using the Model Explorer in the [Auth0 FGA Dashboard](https://dashboard.fga.dev), upload the following model for this app:
 
 ```
