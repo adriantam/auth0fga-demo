@@ -38,7 +38,7 @@ export FGA_CLIENT_ID=<clientID>
 export FGA_CLIENT_SECRET=<secret>
 go run main.go
 ```
-The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the [Auth0 FGA Dashboard](https://dashboard.fga.dev) for your FGA account.
+The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the Settings page of the [Auth0 FGA Dashboard](https://dashboard.fga.dev) in your FGA account.
 
 ## Postman Collection
 [Download](./postman_collection.json) the Postman collection for the sample API if you'd like.
