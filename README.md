@@ -1,5 +1,5 @@
 # openfga-demo
-This project demonstrates a sample Google Docs API with access control enforced via an integration with [openfga/openfga](https://github.com/openfga/openfga).
+This project demonstrates a sample Google Docs API with access control enforced via an integration with [Auth0 FGA](https://fga.dev).
 
 ## Running
 1. Start a Postgres container
@@ -14,5 +14,9 @@ PGPASSWORD=password psql -h localhost -p 5432 -U postgres -d postgres -f schema.
 
 3. Start the app
 ```console
+export FGA_STORE_ID=<storeID>
+export FGA_CLIENT_ID=<clientID>
+export FGA_CLIENT_SECRET=<secret>
 go run main.go
 ```
+The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the Auth0 FGA Dashboard for your FGA account.
