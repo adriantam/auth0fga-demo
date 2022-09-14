@@ -19,4 +19,4 @@ export FGA_CLIENT_ID=<clientID>
 export FGA_CLIENT_SECRET=<secret>
 go run main.go
 ```
-The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the Auth0 FGA Dashboard for your FGA account.
+The `FGA_STORE_ID`, `FGA_CLIENT_ID`, and `FGA_CLIENT_SECRET` can be found in the [Auth0 FGA Dashboard](https://dashboard.fga.dev) for your FGA account.
