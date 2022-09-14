@@ -12,6 +12,24 @@ docker run -e POSTGRES_PASSWORD=password -p 5432:5432  -d postgres:14
 PGPASSWORD=password psql -h localhost -p 5432 -U postgres -d postgres -f schema.sql
 ```
 
+3. Define the Authorization Model in Auth0 FGA
+Using the Model Explorer in the [Auth0 FGA Dashboard](https://dashboard.fga.dev), upload the following model for this app:
+
+```
+type group
+  relations
+    define member as self
+type folder
+  relations
+    define owner as self
+    define viewer as self or owner
+type document
+  relations
+    define owner as self
+    define parent as self
+    define viewer as self or owner or viewer from parent
+```
+
 3. Start the app
 ```console
 export FGA_STORE_ID=<storeID>
