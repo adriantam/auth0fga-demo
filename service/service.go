@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	auth0fga "github.com/auth0-lab/fga-go-sdk"
 	"github.com/google/uuid"
 	"github.com/jon-whit/openfga-demo/middleware/auth"
+	"github.com/openfga/go-sdk/client"
 )
 
 type Folder struct {
@@ -27,7 +27,7 @@ var ErrUnauthorized = fmt.Errorf("unauthorized")
 type Service struct {
 	//Datastore datastore.Store
 	Database  *sql.DB
-	FGAClient auth0fga.Auth0FgaApi
+	FGAClient *client.OpenFgaClient
 }
 
 type CreateGroupRequest struct {
@@ -46,12 +46,12 @@ func (s *Service) CreateGroup(ctx context.Context, req *CreateGroupRequest) (*Cr
 	var placeholders []string
 	var values []interface{}
 
-	var tuples []auth0fga.TupleKey
+	var tuples []client.ClientTupleKey
 	for i, member := range req.Members {
-		tuples = append(tuples, auth0fga.TupleKey{
-			Object:   auth0fga.PtrString(fmt.Sprintf("group:%s", id)),
-			Relation: auth0fga.PtrString("member"),
-			User:     auth0fga.PtrString(member),
+		tuples = append(tuples, client.ClientTupleKey{
+			Object:   fmt.Sprintf("group:%s", id),
+			Relation: "member",
+			User:     member,
 		})
 
 		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d,$%d)", 3*i+1, 3*i+2, 3*i+3))
@@ -60,13 +60,11 @@ func (s *Service) CreateGroup(ctx context.Context, req *CreateGroupRequest) (*Cr
 
 	stmt := fmt.Sprintf(`INSERT INTO groups (id, name, member) VALUES %s`, strings.Join(placeholders, ","))
 
-	body := auth0fga.WriteRequest{
-		Writes: &auth0fga.TupleKeys{
-			TupleKeys: tuples,
-		},
+	body := client.ClientWriteRequest{
+		Writes: &tuples,
 	}
 
-	_, _, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -107,19 +105,17 @@ func (s *Service) CreateFolder(ctx context.Context, req *CreateFolderRequest) (*
 
 	id := uuid.NewString()
 
-	body := auth0fga.WriteRequest{
-		Writes: &auth0fga.TupleKeys{
-			TupleKeys: []auth0fga.TupleKey{
-				{
-					Object:   auth0fga.PtrString(fmt.Sprintf("folder:%s", id)),
-					Relation: auth0fga.PtrString("owner"),
-					User:     auth0fga.PtrString(authCtx.Subject),
-				},
+	body := client.ClientWriteRequest{
+		Writes: &[]client.ClientTupleKey{
+			{
+				Object:   fmt.Sprintf("folder:%s", id),
+				Relation: "owner",
+				User:     authCtx.Subject,
 			},
 		},
 	}
 
-	_, _, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -159,14 +155,12 @@ func (s *Service) GetFolder(ctx context.Context, req *GetFolderRequest) (*GetFol
 		return nil, ErrUnauthorized
 	}
 
-	body := auth0fga.CheckRequest{
-		TupleKey: &auth0fga.TupleKey{
-			Object:   auth0fga.PtrString(fmt.Sprintf("folder:%s", req.ID)),
-			Relation: auth0fga.PtrString("viewer"),
-			User:     auth0fga.PtrString(authCtx.Subject),
-		},
+	body := client.ClientCheckRequest{
+		Object:   fmt.Sprintf("folder:%s", req.ID),
+		Relation: "viewer",
+		User:     authCtx.Subject,
 	}
-	resp, _, err := s.FGAClient.Check(ctx).Body(body).Execute()
+	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
 	if err != nil {
 		// handle error
 	}
@@ -200,28 +194,26 @@ func (s *Service) CreateDocument(ctx context.Context, req *CreateDocumentRequest
 
 	id := uuid.NewString()
 
-	tuples := []auth0fga.TupleKey{
+	tuples := []client.ClientTupleKey{
 		{
-			Object:   auth0fga.PtrString(fmt.Sprintf("document:%s", id)),
-			Relation: auth0fga.PtrString("owner"),
-			User:     auth0fga.PtrString(authCtx.Subject),
+			Object:   fmt.Sprintf("document:%s", id),
+			Relation: "owner",
+			User:     authCtx.Subject,
 		},
 	}
 	if req.Parent != "" {
-		tuples = append(tuples, auth0fga.TupleKey{
-			Object:   auth0fga.PtrString(fmt.Sprintf("document:%s", id)),
-			Relation: auth0fga.PtrString("parent"),
-			User:     auth0fga.PtrString(req.Parent),
+		tuples = append(tuples, client.ClientTupleKey{
+			Object:   fmt.Sprintf("document:%s", id),
+			Relation: "parent",
+			User:     req.Parent,
 		})
 	}
 
-	body := auth0fga.WriteRequest{
-		Writes: &auth0fga.TupleKeys{
-			TupleKeys: tuples,
-		},
+	body := client.ClientWriteRequest{
+		Writes: &tuples,
 	}
 
-	_, _, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -252,14 +244,12 @@ func (s *Service) GetDocument(ctx context.Context, req *GetDocumentRequest) (*Ge
 		return nil, ErrUnauthorized
 	}
 
-	body := auth0fga.CheckRequest{
-		TupleKey: &auth0fga.TupleKey{
-			Object:   auth0fga.PtrString(fmt.Sprintf("document:%s", req.ID)),
-			Relation: auth0fga.PtrString("viewer"),
-			User:     auth0fga.PtrString(authCtx.Subject),
-		},
+	body := client.ClientCheckRequest{
+		Object:   fmt.Sprintf("document:%s", req.ID),
+		Relation: "viewer",
+		User:     authCtx.Subject,
 	}
-	resp, _, err := s.FGAClient.Check(ctx).Body(body).Execute()
+	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
 	if err != nil {
 		// handle error
 	}
@@ -295,19 +285,17 @@ type ShareObjectResponse struct{}
 
 func (s *Service) ShareObject(ctx context.Context, req *ShareObjectRequest) (*ShareObjectResponse, error) {
 
-	body := auth0fga.WriteRequest{
-		Writes: &auth0fga.TupleKeys{
-			TupleKeys: []auth0fga.TupleKey{
-				{
-					Object:   auth0fga.PtrString(req.Object),
-					Relation: auth0fga.PtrString(req.Relation),
-					User:     auth0fga.PtrString(req.UserID),
-				},
+	body := client.ClientWriteRequest{
+		Writes: &[]client.ClientTupleKey{
+			{
+				Object:   req.Object,
+				Relation: req.Relation,
+				User:     req.UserID,
 			},
 		},
 	}
 
-	_, _, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
 	if err != nil {
 		return nil, err
 	}

@@ -17,18 +17,21 @@ PGPASSWORD=password psql -h localhost -p 5432 -U postgres -d postgres -f schema.
 Using the Model Explorer in the [Auth0 FGA Dashboard](https://dashboard.fga.dev), upload the following model for this app:
 
 ```
+model
+  schema 1.1
+type user
 type group
   relations
-    define member as self
+    define member: [user]
 type folder
   relations
-    define owner as self
-    define viewer as self or owner
+    define owner: [user, group#member]
+    define viewer: [user, group#member] or owner
 type document
   relations
-    define owner as self
-    define parent as self
-    define viewer as self or owner or viewer from parent
+    define owner: [user, group#member]
+    define parent: [folder]
+    define viewer: [user, group#member] or owner or viewer from parent
 ```
 
 4. Start the app

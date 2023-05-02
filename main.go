@@ -11,11 +11,13 @@ import (
 	"os/signal"
 	"time"
 
-	auth0fga "github.com/auth0-lab/fga-go-sdk"
 	"github.com/gorilla/mux"
 	"github.com/jon-whit/openfga-demo/middleware/auth"
 	"github.com/jon-whit/openfga-demo/service"
 	_ "github.com/lib/pq"
+	openfga "github.com/openfga/go-sdk"
+	. "github.com/openfga/go-sdk/client"
+	"github.com/openfga/go-sdk/credentials"
 )
 
 type Document struct {
@@ -52,16 +54,20 @@ func main() {
 		log.Fatal("'FGA_CLIENT_SECRET' environment variable must be set")
 	}
 
-	config, err := auth0fga.NewConfiguration(auth0fga.UserConfiguration{
-		StoreId:      storeID,
-		ClientId:     clientID,
-		ClientSecret: clientSecret,
-		Environment:  "us",
-	})
-	if err != nil {
-		log.Fatalf("failed to configure FGA client: %v", err)
+	config := &ClientConfiguration{
+		ApiHost:              "api.us1.fga.dev", // required, define without the scheme (e.g. api.fga.example instead of https://api.fga.example)
+		StoreId:              storeID,           // not needed when calling `CreateStore` or `ListStores`
+		AuthorizationModelId: openfga.PtrString("OPENFGA_AUTHORIZATION_MODEL_ID"),
+		Credentials: &credentials.Credentials{
+			Method: credentials.CredentialsMethodClientCredentials,
+			Config: &credentials.Config{
+				ClientCredentialsClientId:       clientID,
+				ClientCredentialsClientSecret:   clientSecret,
+				ClientCredentialsApiAudience:    "https://api.us1.fga.dev/",
+				ClientCredentialsApiTokenIssuer: "fga.us.auth0.com",
+			},
+		},
 	}
-
 	uri := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
@@ -71,10 +77,15 @@ func main() {
 	}
 	defer db.Close()
 
+	client, err := NewSdkClient(config)
+	if err != nil {
+		log.Fatalf("failed to initialize fga client: %v", err)
+	}
+
 	c := controller{
 		s: service.Service{
 			Database:  db,
-			FGAClient: auth0fga.NewAPIClient(config).Auth0FgaApi,
+			FGAClient: client,
 		},
 	}
 
