@@ -51,7 +51,7 @@ func (s *Service) CreateGroup(ctx context.Context, req *CreateGroupRequest) (*Cr
 		tuples = append(tuples, client.ClientTupleKey{
 			Object:   fmt.Sprintf("group:%s", id),
 			Relation: "member",
-			User:     member,
+			User:     fmt.Sprintf("user:%s", member),
 		})
 
 		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d,$%d)", 3*i+1, 3*i+2, 3*i+3))
@@ -110,7 +110,7 @@ func (s *Service) CreateFolder(ctx context.Context, req *CreateFolderRequest) (*
 			{
 				Object:   fmt.Sprintf("folder:%s", id),
 				Relation: "owner",
-				User:     authCtx.Subject,
+				User:     fmt.Sprintf("user:%s", authCtx.Subject),
 			},
 		},
 	}
@@ -158,7 +158,7 @@ func (s *Service) GetFolder(ctx context.Context, req *GetFolderRequest) (*GetFol
 	body := client.ClientCheckRequest{
 		Object:   fmt.Sprintf("folder:%s", req.ID),
 		Relation: "viewer",
-		User:     authCtx.Subject,
+		User:     fmt.Sprintf("user:%s", authCtx.Subject),
 	}
 	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
 	if err != nil {
@@ -198,14 +198,14 @@ func (s *Service) CreateDocument(ctx context.Context, req *CreateDocumentRequest
 		{
 			Object:   fmt.Sprintf("document:%s", id),
 			Relation: "owner",
-			User:     authCtx.Subject,
+			User:     fmt.Sprintf("user:%s", authCtx.Subject),
 		},
 	}
 	if req.Parent != "" {
 		tuples = append(tuples, client.ClientTupleKey{
 			Object:   fmt.Sprintf("document:%s", id),
 			Relation: "parent",
-			User:     req.Parent,
+			User:     fmt.Sprintf("user:%s", req.Parent),
 		})
 	}
 
@@ -247,7 +247,7 @@ func (s *Service) GetDocument(ctx context.Context, req *GetDocumentRequest) (*Ge
 	body := client.ClientCheckRequest{
 		Object:   fmt.Sprintf("document:%s", req.ID),
 		Relation: "viewer",
-		User:     authCtx.Subject,
+		User:     fmt.Sprintf("user:%s", authCtx.Subject),
 	}
 	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
 	if err != nil {
@@ -275,6 +275,46 @@ func (s *Service) GetDocument(ctx context.Context, req *GetDocumentRequest) (*Ge
 	}, nil
 }
 
+type GetDocumentsResponse struct {
+	Name []string
+}
+
+func (s *Service) GetDocuments(ctx context.Context) (*GetDocumentsResponse, error) {
+
+	authCtx, ok := auth.AuthContextFromContext(ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	body := client.ClientListObjectsRequest{
+		Type:     fmt.Sprintf("document"),
+		Relation: "viewer",
+		User:     fmt.Sprintf("user:%s", authCtx.Subject),
+	}
+	resp, err := s.FGAClient.ListObjects(ctx).Body(body).Execute()
+	if err != nil {
+		// handle error
+	}
+
+	ids := resp.GetObjects()
+	idLength := len(ids)
+	names := make([]string, idLength)
+	for i, id := range ids {
+		row := s.Database.QueryRow(`SELECT name FROM documents WHERE id=$1`, id)
+
+		var name string
+		err = row.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		names[i] = name
+	}
+
+	return &GetDocumentsResponse{
+		Name: names,
+	}, nil
+}
+
 type ShareObjectRequest struct {
 	UserID   string `json:"user"`
 	Relation string `json:"relation"`
@@ -290,7 +330,7 @@ func (s *Service) ShareObject(ctx context.Context, req *ShareObjectRequest) (*Sh
 			{
 				Object:   req.Object,
 				Relation: req.Relation,
-				User:     req.UserID,
+				User:     fmt.Sprintf("user:%s", req.UserID),
 			},
 		},
 	}

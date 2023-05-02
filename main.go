@@ -98,6 +98,7 @@ func main() {
 	r.HandleFunc("/share", c.ShareHandler).Methods(http.MethodPut)
 
 	r.HandleFunc("/documents", c.CreateDocumentHandler).Methods(http.MethodPost)
+	r.HandleFunc("/documents", c.GetDocumentsHandler).Methods(http.MethodGet)
 	r.HandleFunc("/documents/{id}", c.GetDocumentHandler).Methods(http.MethodGet)
 
 	r.HandleFunc("/folders", c.CreateFolderHandler).Methods(http.MethodPost)
@@ -219,6 +220,28 @@ func (c *controller) GetDocumentHandler(w http.ResponseWriter, r *http.Request) 
 	resp, err := c.s.GetDocument(r.Context(), &service.GetDocumentRequest{
 		ID: id,
 	})
+	if err != nil {
+		if err == service.ErrUnauthorized {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	body, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "failed to json marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(body)
+	if err != nil {
+
+	}
+}
+
+func (c *controller) GetDocumentsHandler(w http.ResponseWriter, r *http.Request) {
+
+	resp, err := c.s.GetDocuments(r.Context())
 	if err != nil {
 		if err == service.ErrUnauthorized {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
