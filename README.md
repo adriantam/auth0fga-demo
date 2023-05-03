@@ -75,6 +75,10 @@ POST http://localhost:8080/documents
 GET http://localhost:8080/documents/:id
 ```
 
+```
+GET http://localhost:8080/documents
+```
+
 ### Groups
 ```
 POST http://localhost:8080/groups

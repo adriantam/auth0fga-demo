@@ -15,7 +15,6 @@ import (
 	"github.com/jon-whit/openfga-demo/middleware/auth"
 	"github.com/jon-whit/openfga-demo/service"
 	_ "github.com/lib/pq"
-	openfga "github.com/openfga/go-sdk"
 	. "github.com/openfga/go-sdk/client"
 	"github.com/openfga/go-sdk/credentials"
 )
@@ -55,9 +54,9 @@ func main() {
 	}
 
 	config := &ClientConfiguration{
-		ApiHost:              "api.us1.fga.dev", // required, define without the scheme (e.g. api.fga.example instead of https://api.fga.example)
-		StoreId:              storeID,           // not needed when calling `CreateStore` or `ListStores`
-		AuthorizationModelId: openfga.PtrString("OPENFGA_AUTHORIZATION_MODEL_ID"),
+		ApiHost: "api.us1.fga.dev", // required, define without the scheme (e.g. api.fga.example instead of https://api.fga.example)
+		StoreId: storeID,           // not needed when calling `CreateStore` or `ListStores`
+		//AuthorizationModelId: openfga.PtrString(os.Getenv("OPENFGA_AUTHORIZATION_MODEL_ID")),
 		Credentials: &credentials.Credentials{
 			Method: credentials.CredentialsMethodClientCredentials,
 			Config: &credentials.Config{
@@ -103,6 +102,7 @@ func main() {
 
 	r.HandleFunc("/folders", c.CreateFolderHandler).Methods(http.MethodPost)
 	r.HandleFunc("/folders/{id}", c.GetFolderHandler).Methods(http.MethodGet)
+	r.HandleFunc("/folders", c.GetFoldersHandler).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Addr:         ":8080",
@@ -171,6 +171,9 @@ func (c *controller) CreateFolderHandler(w http.ResponseWriter, r *http.Request)
 	resp, err := c.s.CreateFolder(r.Context(), &req)
 	if err != nil {
 		// handle error
+
+		http.Error(w, "failed to create folder", http.StatusInternalServerError)
+		return
 	}
 
 	body, err := json.Marshal(resp)
@@ -269,6 +272,28 @@ func (c *controller) GetFolderHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := c.s.GetFolder(r.Context(), &service.GetFolderRequest{
 		ID: id,
 	})
+	if err != nil {
+		if err == service.ErrUnauthorized {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	body, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "failed to json marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = w.Write(body)
+	if err != nil {
+
+	}
+}
+
+func (c *controller) GetFoldersHandler(w http.ResponseWriter, r *http.Request) {
+
+	resp, err := c.s.GetFolders(r.Context())
 	if err != nil {
 		if err == service.ErrUnauthorized {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)

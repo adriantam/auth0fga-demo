@@ -114,8 +114,8 @@ func (s *Service) CreateFolder(ctx context.Context, req *CreateFolderRequest) (*
 			},
 		},
 	}
-
-	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	options := client.ClientWriteOptions{}
+	_, err := s.FGAClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,8 @@ func (s *Service) GetFolder(ctx context.Context, req *GetFolderRequest) (*GetFol
 		Relation: "viewer",
 		User:     fmt.Sprintf("user:%s", authCtx.Subject),
 	}
-	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
+	options := client.ClientCheckOptions{}
+	resp, err := s.FGAClient.Check(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		// handle error
 	}
@@ -182,6 +183,49 @@ func (s *Service) GetFolder(ctx context.Context, req *GetFolderRequest) (*GetFol
 			ID:   id,
 			Name: name,
 		},
+	}, nil
+}
+
+type GetFoldersResponse struct {
+	Name []string
+}
+
+func (s *Service) GetFolders(ctx context.Context) (*GetFoldersResponse, error) {
+
+	authCtx, ok := auth.AuthContextFromContext(ctx)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	body := client.ClientListObjectsRequest{
+		Type:     fmt.Sprintf("folder"),
+		Relation: "viewer",
+		User:     fmt.Sprintf("user:%s", authCtx.Subject),
+	}
+	options := client.ClientListObjectsOptions{}
+
+	resp, err := s.FGAClient.ListObjects(ctx).Body(body).Options(options).Execute()
+	if err != nil {
+		// handle error
+	}
+
+	ids := resp.GetObjects()
+	idLength := len(ids)
+	names := make([]string, idLength)
+	for i, id := range ids {
+		newId := strings.TrimPrefix(id, "folder:")
+		row := s.Database.QueryRow(`SELECT name FROM folders WHERE id=$1`, newId)
+
+		var name string
+		err = row.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		names[i] = name
+	}
+
+	return &GetFoldersResponse{
+		Name: names,
 	}, nil
 }
 
@@ -213,7 +257,8 @@ func (s *Service) CreateDocument(ctx context.Context, req *CreateDocumentRequest
 		Writes: &tuples,
 	}
 
-	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	options := client.ClientWriteOptions{}
+	_, err := s.FGAClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +294,9 @@ func (s *Service) GetDocument(ctx context.Context, req *GetDocumentRequest) (*Ge
 		Relation: "viewer",
 		User:     fmt.Sprintf("user:%s", authCtx.Subject),
 	}
-	resp, err := s.FGAClient.Check(ctx).Body(body).Execute()
+	options := client.ClientCheckOptions{}
+
+	resp, err := s.FGAClient.Check(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		// handle error
 	}
@@ -291,7 +338,9 @@ func (s *Service) GetDocuments(ctx context.Context) (*GetDocumentsResponse, erro
 		Relation: "viewer",
 		User:     fmt.Sprintf("user:%s", authCtx.Subject),
 	}
-	resp, err := s.FGAClient.ListObjects(ctx).Body(body).Execute()
+	options := client.ClientListObjectsOptions{}
+
+	resp, err := s.FGAClient.ListObjects(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		// handle error
 	}
@@ -300,7 +349,7 @@ func (s *Service) GetDocuments(ctx context.Context) (*GetDocumentsResponse, erro
 	idLength := len(ids)
 	names := make([]string, idLength)
 	for i, id := range ids {
-		row := s.Database.QueryRow(`SELECT name FROM documents WHERE id=$1`, id)
+		row := s.Database.QueryRow(`SELECT name FROM documents WHERE id=$1`, strings.TrimPrefix(id, "document:"))
 
 		var name string
 		err = row.Scan(&name)
@@ -334,8 +383,9 @@ func (s *Service) ShareObject(ctx context.Context, req *ShareObjectRequest) (*Sh
 			},
 		},
 	}
+	options := client.ClientWriteOptions{}
 
-	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	_, err := s.FGAClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return nil, err
 	}
