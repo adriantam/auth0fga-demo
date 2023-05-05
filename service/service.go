@@ -64,7 +64,9 @@ func (s *Service) CreateGroup(ctx context.Context, req *CreateGroupRequest) (*Cr
 		Writes: &tuples,
 	}
 
-	_, err := s.FGAClient.Write(ctx).Body(body).Execute()
+	options := client.ClientWriteOptions{}
+
+	_, err := s.FGAClient.Write(ctx).Body(body).Options(options).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +251,7 @@ func (s *Service) CreateDocument(ctx context.Context, req *CreateDocumentRequest
 		tuples = append(tuples, client.ClientTupleKey{
 			Object:   fmt.Sprintf("document:%s", id),
 			Relation: "parent",
-			User:     fmt.Sprintf("user:%s", req.Parent),
+			User:     req.Parent,
 		})
 	}
 
@@ -379,7 +381,7 @@ func (s *Service) ShareObject(ctx context.Context, req *ShareObjectRequest) (*Sh
 			{
 				Object:   req.Object,
 				Relation: req.Relation,
-				User:     fmt.Sprintf("user:%s", req.UserID),
+				User:     req.UserID,
 			},
 		},
 	}
